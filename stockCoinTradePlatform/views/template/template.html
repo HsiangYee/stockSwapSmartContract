@@ -1,0 +1,168 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Responsive Admin &amp; Dashboard Template based on Bootstrap 5">
+        <meta name="author" content="AdminKit">
+        <meta name="keywords" content="adminkit, bootstrap, bootstrap 5, admin, dashboard, template, responsive, css, sass, html, theme, front-end, ui kit, web">
+
+        <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link rel="shortcut icon" href="{% static 'img/icons/icon-48x48.png' %}" />
+
+        <link rel="canonical" href="https://demo-basic.adminkit.io/" />
+
+        <title>股權代幣交易系統</title>
+
+        <link href="{% static 'css/app.css' %}" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+        <script href="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    </head>
+
+    <body>
+        <div class="wrapper">
+            <nav id="sidebar" class="sidebar js-sidebar collapsed">
+                <div class="sidebar-content js-simplebar">
+                    <a class="sidebar-brand" href="{% url 'index' %}">
+                        <span class="align-middle">股權代幣交易系統</span>
+                    </a>
+
+                    <ul class="sidebar-nav">
+                        <li class="sidebar-item">
+                            <a class="sidebar-link" href="{% url 'index' %}">
+                                <i class="align-middle" data-feather="sliders"></i> <span class="align-middle">首頁</span>
+                            </a>
+                        </li>
+
+
+                        
+                    </ul>
+
+                    <div class="sidebar-cta">
+                        <div class="sidebar-cta-content">
+                            <strong class="d-inline-block mb-2">上架股權代幣？</strong>
+                            <div class="mb-3 text-sm">
+                                我們開放所有公司在平台發行股權代幣，點擊連結與我們聯繫
+                            </div>
+                            <div class="d-grid">
+                                <a href="upgrade-to-pro.html" class="btn btn-primary">聯繫我們</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="main">
+                <nav class="navbar navbar-expand navbar-light navbar-bg">
+                    <a class="sidebar-toggle js-sidebar-toggle">
+                        <i class="hamburger align-self-center"></i>
+                    </a>
+
+                    <div class="navbar-collapse collapse">
+                        <ul class="navbar-nav navbar-align">
+                            <!-- <li class="nav-item dropdown mx-2">
+                                前往交易1
+                            </li> -->
+                            <!-- <li id="address" class="nav-item dropdown mx-2" onclick="connectWallet()">
+                                連接錢包
+                            </li> -->
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-icon dropdown-toggle d-inline-block d-sm-none" href="#" data-bs-toggle="dropdown">
+                                    <i class="align-middle" data-feather="settings"></i>
+                                </a>
+
+                                <a class="nav-link dropdown-toggle d-none d-sm-inline-block" onclick="connectWallet()" href="#" data-bs-toggle="dropdown">
+                                    <span id="address" class="text-dark">連接錢包</span>
+                                </a>
+
+                                <div id="accountSetting" class="dropdown-menu dropdown-menu-end d-none">
+                                    <a class="dropdown-item" href="#" onclick="disconnect()">Log out</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <main class="content">
+                    <div class="container-fluid p-0">
+                        <h1 class="h3 mb-3"><strong>{% block title %}{% endblock %}</strong></h1>
+                        {% block content %}{% endblock %}
+                    </div>
+                </main>
+
+                <footer class="footer">
+                    <div class="container-fluid">
+                        <div class="row text-muted">
+                            <div class="col-6 text-start">
+                                <p class="mb-0">
+                                    <a class="text-muted" href="https://adminkit.io/" target="_blank"><strong>AdminKit</strong></a> &copy;
+                                </p>
+                            </div>
+                            <div class="col-6 text-end">
+                                <ul class="list-inline">
+                                    <li class="list-inline-item">
+                                        <a class="text-muted" href="https://adminkit.io/" target="_blank">Support</a>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <a class="text-muted" href="https://adminkit.io/" target="_blank">Help Center</a>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <a class="text-muted" href="https://adminkit.io/" target="_blank">Privacy</a>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <a class="text-muted" href="https://adminkit.io/" target="_blank">Terms</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
+        <script src="{% static 'js/app.js' %}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+        <!-- <script src="{% static 'contractsABI/swap.js' %}"></script> -->
+        <script src="{% static 'contractsABI/sTWD.js' %}"></script>
+
+        <script src="{% static 'contractsABI/stocks/v2330.js' %}"></script>
+        <script src="{% static 'contractsABI/PairFactory/Factory.js' %}"></script>
+        <script src="{% static 'contractsABI/PairFactory/pairABI.js' %}"></script>
+
+        <script src="{% static 'contractsABI/TokenFactory/TokenContract.js' %}"></script>
+        <script src="{% static 'contractsABI/TokenFactory/TokenFactory.js' %}"></script>
+
+        <!-- <script src="{% static 'contractsABI/test.js' %}"></script> -->
+        <script>
+            const web3 = new Web3(ethereum);
+            const factoryContract = new web3.eth.Contract(factory_ABI, factory_address);
+            var walletAddress = "";
+
+            function isAddress(address) {
+                return web3.utils.isAddress(address);
+            }
+
+            function connectWallet() {
+                if (typeof window.ethereum !== 'undefined') {
+                    ethereum.request({ method: 'eth_requestAccounts' })
+                        .then(account => {
+                            const address = account[0];
+                            walletAddress = address;
+                            // console.log(address);
+                            document.getElementById('address').innerHTML = address.substr(0, 8) + "...";
+                            document.getElementById('accountSetting').classList.remove("d-none");
+                        });
+                } else {
+                    alert('need install metamask');
+                }
+            }
+            
+            connectWallet();
+        </script>
+        {% block javascript %}{% endblock %}
+    </body>
+</html>

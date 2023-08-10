@@ -1,0 +1,318 @@
+{% extends "template/template.html" %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-sm-10 col-md-8 col-lg-6 mx-auto d-table h-100">
+            <div class="d-table-cell align-middle">
+
+                <div class="text-center">
+                    <h1 class="h2">股 票 資 金 池</h1>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="m-sm-4">
+                            <div class="mb-3">
+                                <input class="form-control form-control-lg" type="text" id="stockAddress" placeholder="輸入股票合約地址" autocomplete="new-text" autocomplete="off" onchange="checkpair()">
+                            </div>
+
+                            <div class="text-center h2" id="price">
+
+                            </div>
+                            
+                            <div class="row mb-2">
+                                <div class="col text-end">
+                                    <a href="#" id="addLiquidityLink">流 動 性</a>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col mb-0">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col mb-0">
+                                                    <h5 class="card-title">穩定幣</h5>
+                                                </div>
+                                            </div>
+                                            <h1 class="mt-1 mb-1" id="token1"></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col mb-0">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col mb-0">
+                                                    <h5 class="card-title">股權代幣</h5>
+                                                </div>
+                                            </div>
+                                            <h1 class="mt-1 mb-1" id="token2"></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+
+
+                            <div class="text-center" id="message">
+                            </div>
+
+                            <div class="text-center" id="pairInfo">
+                            </div>
+
+                            <hr />
+
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <button class="btn btn-sm btn-primary w-100" onclick="clickBuy()">買 入</button>
+                                </div>    
+
+                                <div class="col">
+                                    <button class="btn btn-sm btn-danger w-100" onclick="clickSell()">賣 出</button>
+                                </div>  
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col mb-0">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col mb-0">
+                                                    <h5 class="card-title mb-1" id="inputTitle"></h5> <br />
+                                                    <input type="number" id="amount" min="0" value="0" class="m-0 mb-1 px-0 w-100" style="border:none;border-bottom:1px solid;font-size:22px" disabled="true" onchange="calculateStable()">
+                                                    
+                                                    <span id="estimateMessage">
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <button class="btn btn-sm btn-info w-100" onclick="approve()">批准</button>
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <div class="row">
+                                <div class="col">
+                                    <button class="btn btn-sm btn-info w-100" onclick="swap()">下 單</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        var pair_address = "";
+        var pairContract;
+        var tradeMode;
+
+        document.getElementById("stockAddress").value = "{{ contract_address }}"
+
+        setTimeout(() => {
+            checkpair();
+        }, 200);
+
+        // 確認資金池
+        function checkpair() {
+            var object = document.getElementById("stockAddress")
+            if (isAddress(object.value)) {
+                checkPairExist(object.value);
+            } else {
+                console.log("error")
+            }
+        }
+
+        // 確認資金池是否存在
+        async function checkPairExist(address) {
+            response = await factoryContract.methods.checkPairExists(address, TWDs_address).call({
+                from: walletAddress
+            })
+
+            if (response[0] == false) {
+                content = `
+                    尚未有此股票流動池 <br /><br />
+                    <button class="btn btn-sm btn-info" onclick="createPair()">創立資金池</button>
+                `;
+
+                document.getElementById("message").innerHTML = content;
+
+                
+            } else {
+                pair_address = response[1];
+                content = pair_address;
+                pairContract = new web3.eth.Contract(pair_ABI, pair_address);
+                getPairInfo()
+                getQuote(1)
+
+                document.getElementById("message").innerHTML = `合約地址：<a href="https://goerli.etherscan.io/address/${content}" target="_blank">${content}</a>`;
+                document.getElementById("addLiquidityLink").href = "http://127.0.0.1:8000/addLiquidity/" + content
+            }
+
+            
+        }
+
+        // 取得資金池資訊
+        async function getPairInfo () {            
+            response = await pairContract.methods.getReserves().call({
+                from: walletAddress
+            })
+
+            token1 = Math.floor(Number(response[0]) / 1e18)
+            token2 = Math.floor(Number(response[1]) / 1e18)
+
+            document.getElementById("token1").innerHTML = token1
+            document.getElementById("token2").innerHTML = token2
+        }
+
+        // 計算 output 
+        async function getQuote (amount) {
+            amount = amount + "000000000000000000"
+            response = await pairContract.methods.quote(amount).call({
+                from: walletAddress
+            })
+
+            console.log(response)
+            response = Math.floor(Number(response) / 1e16) / 100
+
+            document.getElementById("price").innerHTML = response + " TWD"
+            // console.log(response)
+        }
+
+        async function calculateBuyStable() {
+            amount = document.getElementById("amount").value
+            amount = amount + "000000000000000000"
+
+            response = await pairContract.methods.getAmountsIn(amount).call({
+                from: walletAddress
+            });
+
+            cost = Math.floor(Number(response) / 1e16) / 100
+            console.log(cost)
+            return cost
+        }
+
+        async function calculateSellStable() {
+            amount = document.getElementById("amount").value
+            amount = amount + "000000000000000000"
+
+            response = await pairContract.methods.getAmountsOut(amount).call({
+                from: walletAddress
+            });
+
+            cost = Math.floor(Number(response) / 1e16) / 100
+            console.log(cost)
+            return cost
+        }
+
+        async function buyToken(amount) {
+            amount = document.getElementById("amount").value
+            amount = amount + "000000000000000000"
+
+            const stockContract = new web3.eth.Contract(TWDs_ABI, TWDs_address);
+            await stockContract.methods.approve(pair_address, `${amount}`).send({
+                from: walletAddress
+            });
+        }
+
+        async function sellToken(amount) {
+            amount = document.getElementById("amount").value
+            amount = amount + "000000000000000000"
+
+            const stockContract = new web3.eth.Contract(v2330_ABI, v2330_address);
+            await stockContract.methods.approve(pair_address, `${amount}`).send({
+                from: walletAddress
+            });
+        }
+
+        function clickBuy() {
+            object = document.getElementById("inputTitle")
+            object.innerHTML = "買 入 股 權 代 幣"
+
+            inputObject = document.getElementById("amount")
+            inputObject.disabled = false;
+            tradeMode = "buy";
+
+            if(inputObject.value.length != 0 & inputObject.value != "0") {
+                calculateStable();
+            }
+        }
+
+        function clickSell() {
+            object = document.getElementById("inputTitle")
+            object.innerHTML = "賣 出 股 權 代 幣"
+
+            inputObject = document.getElementById("amount")
+            inputObject.disabled = false;
+            tradeMode = "sell";
+
+            if(inputObject.value.length != 0 & inputObject.value != "0") {
+                calculateStable();
+            }
+        }
+
+        estimate = 0
+        async function calculateStable() {
+            if(tradeMode == "buy") {
+                estimate = await calculateBuyStable();
+                document.getElementById("estimateMessage").innerHTML = "預估花費：" + estimate;
+                
+            } else if (tradeMode == "sell") {    
+                estimate = await calculateSellStable();
+                document.getElementById("estimateMessage").innerHTML = "預估收到：" + estimate;
+            }
+        }
+
+        async function approve() {
+            if(tradeMode == "buy") {
+                const stockContract = new web3.eth.Contract(TWDs_ABI, TWDs_address);
+                await stockContract.methods.approve(pair_address, 100).send({
+                    from: walletAddress
+                });
+                
+            } else if (tradeMode == "sell") {
+                const stockContract = new web3.eth.Contract(TokenContractABI, "{{ contract_address }}");
+                await stockContract.methods.approve(pair_address, 100).send({
+                    from: walletAddress
+                });
+            }
+        }
+
+        async function swap() {
+            if(tradeMode == "buy") {
+                amount = document.getElementById("amount").value
+                amount = amount + "000000000000000000"
+                await pairContract.methods.buy(amount).send({
+                    from: walletAddress
+                })
+
+            } else if (tradeMode == "sell") {
+                amount = document.getElementById("amount").value
+                amount = amount + "000000000000000000"
+                await pairContract.methods.sell(amount).send({
+                    from: walletAddress
+                })
+            }
+        }
+
+        // 建立資金池
+        async function createPair() {
+            var object = document.getElementById("stockAddress")
+            await factoryContract.methods.createPair(object.value, TWDs_address, "stockSwap v2230 / TWDs", "v2230/TWDs LP").send({
+                from: walletAddress
+            })
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "template/template.html" %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-sm-10 col-md-8 col-lg-6 mx-auto d-table h-100">
+            <div class="d-table-cell align-middle">
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="m-sm-4">
+                            <div class="text-center mb-3">
+                                提 供 流 動 性
+                            </div>
+
+                            
+                            <div class="row">
+                                <div class="col mb-0">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col mb-0">
+                                                    <h5 class="card-title mb-1">穩定幣</h5> <br />
+                                                    <input type="number" id="stableToken" min="0" value="0" class="m-0 mb-1 px-0 w-100" style="border:none;border-bottom:1px solid;font-size:22px">
+
+                                                    <button class="btn btn-sm btn-info w-100" onclick="vTWDtokenApprove(1)">批 准</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col mb-0">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col mb-0">
+                                                    <h5 class="card-title mb-1">股權代幣</h5> <br />
+                                                    <input type="number" id="token" min="0" value="0" class="m-0 mb-1 px-0 w-100" style="border:none;border-bottom:1px solid;font-size:22px">
+
+                                                    <button class="btn btn-sm btn-info w-100" onclick="tokenApprove(1)">批 准</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <button class="btn btn-sm btn-info w-100 my-1" onclick="addLiquidity()">增 加 流 動 性</button>
+                            </div>
+
+                            <hr />
+
+                            
+
+
+                            <div class="text-center mb-3">
+                                移 除 流 動 性
+                            </div>
+
+                            <div class="row">
+                                <div class="col mb-0">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col mb-0">
+                                                    <h5 class="card-title mb-1">
+                                                        移除LP代幣 <br />
+                                                        持有數量：<span id="holdAmount"></span>
+                                                    </h5> <br />
+                                                    
+                                                    <input type="number" id="LPToken" min="0" value="0" class="m-0 mb-1 px-0 w-100" style="border:none;border-bottom:1px solid;font-size:22px">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <button class="btn btn-sm btn-info w-100 my-1" onclick="removeLiquidity()">移 除 流 動 性</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        var pair_address = "{{ contract_address }}";
+        var tokenAddress = ""
+        // var pairContract;
+
+        const pairContract = new web3.eth.Contract(pair_ABI, pair_address);
+
+        async function getTokenAddress() {
+            tokenAddress = await pairContract.methods.token().call({
+                from: walletAddress
+            });
+        }
+
+        async function addLiquidity () {
+            tokenA_amount = document.getElementById("stableToken").value
+            tokenB_amount = document.getElementById("token").value
+            tokenA_amount = tokenA_amount + "000000000000000000"
+            tokenB_amount = tokenB_amount + "000000000000000000"
+            response = await pairContract.methods.addLiquidity(`${tokenA_amount}`, `${tokenB_amount}`).send({
+                from: walletAddress
+            })
+
+            console.log(response)
+        }
+
+        // token Approve
+        async function tokenApprove(amount) {
+            amount = amount + "000000000000000000"
+
+            const stockContract = new web3.eth.Contract(TokenContractABI, tokenAddress);
+            await stockContract.methods.approve(pair_address, `${amount}`).send({
+                from: walletAddress
+            });
+        }
+
+        // vTWD Approve
+        async function vTWDtokenApprove(amount) {
+            amount = amount + "000000000000000000"
+
+            const stockContract = new web3.eth.Contract(TWDs_ABI, TWDs_address);
+            await stockContract.methods.approve(pair_address, `${amount}`).send({
+                from: walletAddress
+            });
+        }
+
+        
+        async function getPoolShare() {
+            ratio = await pairContract.methods.getPoolShare(walletAddress).call({
+                from: walletAddress
+            })
+
+            ratio = (Number(ratio) / 1e18) * 100
+            // console.log((Number(ratio) / 1e18) * 100)
+
+            holdAmount = await pairContract.methods.balanceOf(walletAddress).call({
+                from: walletAddress
+            })
+
+            holdAmount = Math.floor(Number(holdAmount) / 1e16) / 100
+            // console.log(Math.floor(Number(holdAmount) / 1e16) / 100)
+
+            document.getElementById("holdAmount").innerHTML = `${holdAmount}(${ratio}%)`
+        }
+
+        async function removeLiquidity() {
+            amount = document.getElementById("LPToken").value
+
+            amount = amount + "000000000000000000"
+
+            pairContract.methods.removeLiquidity(amount).send({
+                from: walletAddress
+            })
+        }
+
+        setTimeout(function() {
+            getPoolShare();
+            getTokenAddress();
+        }, 300)
+        
+    </script>
+{% endblock %}
